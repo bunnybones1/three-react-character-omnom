@@ -27,7 +27,10 @@ export function WebGPUPostProcessing({
     if (!renderer || !scene || !camera) return;
 
     // Create post-processing setup with specific filters
-    const scenePass = pass(scene, camera);
+    const scenePass = pass(scene, camera, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+    });
 
     // Setup Multiple Render Targets (MRT)
     scenePass.setMRT(
@@ -35,7 +38,6 @@ export function WebGPUPostProcessing({
         output: output,
         normal: transformedNormalView,
         metalness: metalness,
-        depth: depth,
         emissive: emissive,
       })
     );
@@ -55,9 +57,9 @@ export function WebGPUPostProcessing({
       scenePassMetalness,
       camera
     );
-    ssrPass.resolutionScale = 0.5;
-    ssrPass.maxDistance.value = 1.5;
-    ssrPass.opacity.value = 0.5;
+    ssrPass.resolutionScale = 0.65;
+    ssrPass.maxDistance.value = 0.65;
+    ssrPass.opacity.value = 0.85;
     ssrPass.thickness.value = 0.015;
 
     // Create bloom pass
