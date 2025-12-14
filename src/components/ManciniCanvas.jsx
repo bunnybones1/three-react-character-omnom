@@ -23,9 +23,9 @@ export function ManciniCanvas({ quality, children }) {
         // zoom: 1,
       }}
       shadows={"variance"}
-      gl={(canvas) => {
+      gl={(props) => {
         const renderer = new THREE.WebGPURenderer({
-          canvas,
+          canvas:props.canvas,
           powerPreference: "high-performance",
           antialias: false,
           alpha: false,

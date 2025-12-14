@@ -3,11 +3,13 @@ import {
   pass,
   mrt,
   output,
-  transformedNormalView,
+  normalView,
   metalness,
   blendColor,
   depth,
   emissive,
+  roughness,
+  vec2,
 } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { ssr } from "three/addons/tsl/display/SSRNode.js";
@@ -36,8 +38,8 @@ export function WebGPUPostProcessing({
     scenePass.setMRT(
       mrt({
         output: output,
-        normal: transformedNormalView,
-        metalness: metalness,
+        normal: normalView,
+        metalrough: vec2(metalness, roughness),
         emissive: emissive,
       })
     );
@@ -46,7 +48,8 @@ export function WebGPUPostProcessing({
     const scenePassColor = scenePass.getTextureNode("output");
     const scenePassNormal = scenePass.getTextureNode("normal");
     const scenePassDepth = scenePass.getTextureNode("depth");
-    const scenePassMetalness = scenePass.getTextureNode("metalness");
+    const scenePassMetalRough = scenePass.getTextureNode("metalrough");
+
     const scenePassEmissive = scenePass.getTextureNode("emissive");
 
     // Create SSR pass
@@ -54,13 +57,14 @@ export function WebGPUPostProcessing({
       scenePassColor,
       scenePassDepth,
       scenePassNormal,
-      scenePassMetalness,
+      scenePassMetalRough.r,
+      scenePassMetalRough.g,
       camera
     );
-    ssrPass.resolutionScale = 0.65;
-    ssrPass.maxDistance.value = 0.65;
-    ssrPass.opacity.value = 0.85;
-    ssrPass.thickness.value = 0.015;
+    ssrPass.resolutionScale = 1;
+    ssrPass.maxDistance.value = 5;
+    ssrPass.opacity.value = 1;
+    ssrPass.thickness.value = 0.05;
 
     // Create bloom pass
     const bloomPass = bloom(scenePassEmissive, strength, radius, 0.6);
