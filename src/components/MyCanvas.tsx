@@ -1,13 +1,15 @@
 import { Canvas, extend } from "@react-three/fiber";
+import type { ReactNode } from "react";
 import { useRef, useState } from "react";
 import * as THREE from "three/webgpu";
 import { ResizeHandler } from "./ResizeHandler";
+import type { Quality } from "../types";
 
-extend(THREE);
+extend(THREE as unknown as Parameters<typeof extend>[0]);
 
-export function ManciniCanvas({ quality, children }) {
-  const rendererRef = useRef();
-  const [frameloop, setFrameloop] = useState("never");
+export function MyCanvas({ quality, children }: { quality: Quality; children: ReactNode }) {
+  const rendererRef = useRef<THREE.WebGPURenderer | null>(null);
+  const [frameloop, setFrameloop] = useState<"never" | "always">("never");
   return (
     <Canvas
       onCreated={(state) => {
@@ -16,16 +18,17 @@ export function ManciniCanvas({ quality, children }) {
       frameloop={frameloop}
       dpr={quality === "default" ? 1 : [1, 1.5]}
       camera={{
-        position: [18.6, -0.6, 0],
+        position: [8.6, 0.6, 0],
         near: 0.1,
         far: 50,
         fov: 65,
         // zoom: 1,
       }}
       shadows={"variance"}
-      gl={(props) => {
+      gl={(props: unknown) => {
+        const canvas = (props as { canvas: HTMLCanvasElement }).canvas;
         const renderer = new THREE.WebGPURenderer({
-          canvas:props.canvas,
+          canvas,
           powerPreference: "high-performance",
           antialias: false,
           alpha: false,
@@ -39,7 +42,7 @@ export function ManciniCanvas({ quality, children }) {
       }}
     >
       {children}
-      <ResizeHandler quality={quality} rendererRef={rendererRef} />
+      <ResizeHandler rendererRef={rendererRef} />
     </Canvas>
   );
 }

@@ -1,15 +1,14 @@
-import { Environment } from "@react-three/drei";
 import { OrbitControls } from "@react-three/drei";
 
-export function Light_Environment() {
+export function Environment() {
   return (
     <>
       <directionalLight
-        position={[-0.7, 1.8, 0.1]}
+        position={[7, 10, 5]}
         intensity={6}
         castShadow
-        shadow-mapSize={[128, 128]}
-        shadow-camera-near={2}
+        shadow-mapSize={[1024, 1024]}
+        shadow-camera-near={0.01}
         shadow-camera-far={100}
         shadow-camera-top={3}
         shadow-camera-right={3}
@@ -17,23 +16,24 @@ export function Light_Environment() {
         shadow-camera-left={-3}
         shadow-bias={-0.002}
       />
+      <ambientLight color={0xaabbff} intensity={5} />
       <OrbitControls
-        target={[2, -0.6, 0]}
+        target={[0, 0.5, 0]}
         // zoomSpeed={0.8}
-        screenSpacePanning={false}
+        screenSpacePanning={true}
         dampingFactor={0.08}
         maxPolarAngle={Math.PI / 1.75}
-        minPolarAngle={Math.PI / 2.7}
-        maxDistance={2.4}
-        minDistance={1}
+        minPolarAngle={0}
+        maxDistance={15}
+        minDistance={2}
         minZoom={0.5}
         maxZoom={1}
       />
-      <Environment
+      {/* <DreiEnvironment
         preset="warehouse"
         environmentIntensity={0.2}
         environmentRotation={[0.4, 0, 1.4]}
-      />
+      /> */}
     </>
   );
 }
