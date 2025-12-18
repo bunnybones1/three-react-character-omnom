@@ -1,49 +1,105 @@
-import { useFrame } from "@react-three/fiber";
-import { useState } from "react";
-import Eye from "./Eye";
+import { useGLTF } from "@react-three/drei";
+import { useLayoutEffect, useMemo, useRef } from "react";
+import { Bone, Color, Group, Mesh, MeshStandardMaterial, SkinnedMesh } from "three";
+import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
+import { useMonsterAnimation } from "./useMonsterAnimation";
+import { type BoneState } from "./characterRigUtils/boneUtils";
 import type { Eul, Vec3 } from "./types";
+import { DEFAULT_MONSTER_URL } from "../constants";
 
-export default function Monster(props: { position: Vec3; rotation: Eul; color: number }) {
-  const { position, rotation, color } = props;
-  const [offsetY, setOffsetY] = useState(0);
-  const [eyesClosed, setEyesClosed] = useState(0);
+const TARGET_BONES = [
+  "Bone-root",
+  "Bone-shoulder-L",
+  "Bone-elbow-L",
+  "Bone-wrist-L",
+  "Bone-shoulder-R",
+  "Bone-elbow-R",
+  "Bone-wrist-R",
+  "Bone-mouth-lower-L",
+  "Bone-mouth-lower-R",
+  "Bone-jaw-and-chin",
+  "Bone-jaw-lower",
+  "Bone-mouth-upper-L",
+  "Bone-mouth-upper-R",
+  "Bone-head",
+  "Bone-hip-L",
+  "Bone-knee-L",
+  "Bone-foot-L",
+  "Bone-ankle-L",
+  "Bone-hip-R",
+  "Bone-knee-R",
+  "Bone-foot-R",
+  "Bone-ankle-R",
+];
 
-  const [offsetYPhase] = useState(() => Math.random() * Math.PI * 2);
-  useFrame((state, _dt) => {
-    setOffsetY(Math.sin(6 * state.clock.elapsedTime + offsetYPhase) * 0.05 + 1);
-    setEyesClosed(Math.max(0, Math.min(1, Math.sin(state.clock.elapsedTime) * 10 - 8)));
-  });
-
-  return (
-    <group position={position} rotation={rotation}>
-      <mesh castShadow receiveShadow position={[0, offsetY, 0]}>
-        <sphereGeometry args={[0.6]} />
-        <meshStandardNodeMaterial color={color} roughness={0.5} />
-        <mesh castShadow receiveShadow position={[-0.2, 0, -0.8]} rotation={[1, 0, 0]}>
-          <capsuleGeometry args={[0.15, 1.4]} />
-          <meshStandardNodeMaterial color={color} roughness={0.1} side={2} />
-        </mesh>{" "}
-        <mesh castShadow receiveShadow position={[-0.2, 0, 0.8]} rotation={[-1, 0, 0]}>
-          <capsuleGeometry args={[0.15, 1.4]} />
-          <meshStandardNodeMaterial color={color} roughness={0.1} side={2} />
-        </mesh>
-        <group position={[0, 1.2, 0]}>
-          <mesh castShadow receiveShadow rotation={[Math.PI * 0.5, 2.8, 0]}>
-            <sphereGeometry args={[1, 32, 16, 0, Math.PI * 1.9]} />
-            <meshStandardNodeMaterial color={color} roughness={0.1} side={2} />
-          </mesh>
-          <Eye position={[0.7, 0.2, 0.5]} color={color} closed={eyesClosed} />
-          <Eye position={[0.7, 0.2, -0.5]} color={color} closed={eyesClosed} />
-        </group>
-      </mesh>
-      <mesh castShadow receiveShadow position={[0, -0.1, 0.3]} rotation={[0, 0, 0]}>
-        <capsuleGeometry args={[0.15, 1.4]} />
-        <meshStandardNodeMaterial color={color} roughness={0.1} side={2} />
-      </mesh>
-      <mesh castShadow receiveShadow position={[0, -0.1, -0.3]} rotation={[0, 0, 0]}>
-        <capsuleGeometry args={[0.15, 1.4]} />
-        <meshStandardNodeMaterial color={color} roughness={0.1} side={2} />
-      </mesh>
-    </group>
-  );
+function makeColor(color?: number) {
+  const colorValue = new Color(color);
+  if (color === undefined) {
+    colorValue.setHSL(Math.random(), 1, 0.5);
+  }
+  return colorValue;
 }
+
+export type MonsterProps = {
+  color?: number;
+  position?: Vec3;
+  rotation?: Eul;
+  modelUrl?: string;
+};
+
+const DEFAULT_POSITION: Vec3 = [0, 0, 0];
+const DEFAULT_ROTATION: Eul = [0, 0, 0];
+
+export function Monster(props: MonsterProps) {
+  const {
+    color,
+    position = DEFAULT_POSITION,
+    rotation = DEFAULT_ROTATION,
+    modelUrl = DEFAULT_MONSTER_URL,
+  } = props;
+  const gltf = useGLTF(modelUrl);
+  const colorRef = useRef<Color>(makeColor(color));
+  const scene = useMemo(() => SkeletonUtils.clone(gltf.scene) as Group, [gltf.scene]);
+  const bonesRef = useRef<Map<string, BoneState>>(new Map());
+  const phaseRef = useRef(Math.random() * Math.PI * 2);
+
+  useLayoutEffect(() => {
+    colorRef.current = makeColor(color);
+    const bones = new Map<string, BoneState>();
+    scene.traverse((child) => {
+      if (child instanceof Mesh || child instanceof SkinnedMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+
+        if (child.material.name === "skin" && child.material instanceof MeshStandardMaterial) {
+          if (!child.userData.clonedMaterial) {
+            child.material = child.material.clone();
+            child.userData.clonedMaterial = true;
+          }
+          child.material.color.copy(colorRef.current);
+        }
+      }
+      if (child instanceof Bone && TARGET_BONES.includes(child.name)) {
+        const storedRotation = child.userData.restRotation as BoneState["restRotation"] | undefined;
+        const restRotation = storedRotation ?? child.rotation.clone();
+        if (!storedRotation) {
+          child.userData.restRotation = restRotation;
+        }
+        bones.set(child.name, { bone: child, restRotation });
+      }
+    });
+    bonesRef.current = bones;
+  }, [scene, color]);
+
+  useMonsterAnimation(bonesRef, phaseRef, position, rotation);
+
+  return <primitive object={scene} />;
+}
+
+function preloadMonster(url: string = DEFAULT_MONSTER_URL) {
+  useGLTF.preload(url);
+}
+
+preloadMonster();
+
+export default Monster;

@@ -9,7 +9,13 @@ import tseslint from "typescript-eslint";
 
 export default [
   {
-    ignores: ["dist/**", "node_modules/**", ".wrangler/**", ".pnpm-store/**"],
+    ignores: [
+      "dist/**",
+      "dist-lib/**",
+      "node_modules/**",
+      ".wrangler/**",
+      ".pnpm-store/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

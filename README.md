@@ -1,15 +1,36 @@
-# React Three Fiber WebGPU Post Processing
+# Omnom 3D Character for React Three Fiber
 
-[![screenshot](https://r3f-webgpu-starter.dysinski-tomasz.workers.dev/social.jpg)](https://r3f-webgpu-starter.dysinski-tomasz.workers.dev/)
+[![npm version](https://img.shields.io/npm/v/three-react-character-omnom)](https://www.npmjs.com/package/three-react-character-omnom)
 
-A very simple scene to demonstrate how to integrate Threejs WebGPU with React Three Fiber using Post Processing effects.
-[See the demo here](https://r3f-webgpu-starter.dysinski-tomasz.workers.dev/)
+A rigged 3D character component of a monster named Omnom for React Three Fiber, published on npm as `three-react-character-omnom`.
 
-### Getting Started using this demo project
+## Install
 
-Download and install Node.js on your computer (https://nodejs.org/en/download/).
+```shell
+npm install three-react-character-omnom
+```
 
-Then, open VSCODE, drag the project folder to it. Open VSCODE terminal and install dependencies (you need to do this only in the first time)
+## Package usage (Monster)
+
+```tsx
+import { Canvas } from "@react-three/fiber";
+import { Monster } from "three-react-character-omnom";
+
+export function Scene() {
+  return (
+    <Canvas>
+      <Monster position={[0, 0, 0]} rotation={[0, 0, 0]} />
+    </Canvas>
+  );
+}
+```
+
+Pass `modelUrl` if you want to load your own `.glb`. The default uses the bundled model.
+
+### Development
+
+I recommend using pnpm.
+Install dependencies:
 
 ```shell
 pnpm install
@@ -21,20 +42,8 @@ Run this command in your terminal to open a local server at localhost:5173
 pnpm dev
 ```
 
-## Deploy to Cloudflare Workers (static hosting)
-
-This repo can be deployed as a Cloudflare Worker that serves the Vite build output from `dist/`.
+### Building the package
 
 ```shell
-pnpm install
-pnpm deploy
+pnpm build:lib
 ```
-
-If you haven’t authenticated Wrangler yet:
-
-```shell
-pnpm exec wrangler login
-```
-
-Forked from a fantastic repo by Anderson Mancini.
-Please show him your appreciation. Consider buying him a coffee to support his development at https://www.buymeacoffee.com/andersonmancini.

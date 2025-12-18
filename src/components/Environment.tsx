@@ -1,5 +1,7 @@
 import { OrbitControls } from "@react-three/drei";
 
+const shaddowRange = 10;
+
 export function Environment() {
   return (
     <>
@@ -10,10 +12,10 @@ export function Environment() {
         shadow-mapSize={[1024, 1024]}
         shadow-camera-near={0.01}
         shadow-camera-far={100}
-        shadow-camera-top={3}
-        shadow-camera-right={3}
-        shadow-camera-bottom={-3}
-        shadow-camera-left={-3}
+        shadow-camera-top={shaddowRange}
+        shadow-camera-right={shaddowRange}
+        shadow-camera-bottom={-shaddowRange}
+        shadow-camera-left={-shaddowRange}
         shadow-bias={-0.002}
       />
       <ambientLight color={0xaabbff} intensity={5} />

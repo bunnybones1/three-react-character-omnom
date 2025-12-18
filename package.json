@@ -1,16 +1,23 @@
 {
-  "name": "basic-demo",
-  "version": "1.0.0",
-  "description": "Shows how to form self-contained components with their own state and user interaction.",
-  "keywords": [
-    "interaction",
-    "pointer-events"
+  "name": "three-react-character-omnom",
+  "version": "0.0.8",
+  "description": "A 3D rigged character component with a simplified control interface and procedural animations.",
+  "main": "dist-lib/index.cjs",
+  "module": "dist-lib/index.mjs",
+  "types": "dist-lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist-lib/index.d.ts",
+      "import": "./dist-lib/index.mjs",
+      "require": "./dist-lib/index.cjs"
+    }
+  },
+  "files": [
+    "dist-lib"
   ],
-  "main": "src/main.tsx",
-  "dependencies": {
+  "peerDependencies": {
     "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.4.2",
-    "@types/three": "^0.182.0",
+    "@react-three/fiber": "^9.5.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "three": "^0.182.0"
@@ -19,7 +26,10 @@
     "@eslint/js": "^9.39.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.182.0",
     "@vitejs/plugin-react": "^4.7.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
@@ -28,6 +38,9 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "prettier": "^3.7.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "three": "^0.182.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.49.0",
     "vite": "^6.4.1",
@@ -38,6 +51,8 @@
     "start": "pnpm dev",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "vite build",
+    "build:lib": "vite build --config vite.config.lib.mjs && tsc -p tsconfig.build.json",
+    "prepack": "pnpm build:lib",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
