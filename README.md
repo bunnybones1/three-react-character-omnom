@@ -4,11 +4,10 @@
 
 [![screenshot](https://three-react-character-omnom.dysinski-tomasz.workers.dev/social.jpg)](https://three-react-character-omnom.dysinski-tomasz.workers.dev/)
 
-A very simple scene to demonstrate how to integrate Threejs WebGPU with React Three Fiber using Post Processing effects.
+A rigged 3D character component of a monster named Omnom for React Three Fiber, published on npm as `three-react-character-omnom`.
+
 [See the demo here](https://three-react-character-omnom.dysinski-tomasz.workers.dev/)
 
-
-A rigged 3D character component of a monster named Omnom for React Three Fiber, published on npm as `three-react-character-omnom`.
 
 ## Install
 
