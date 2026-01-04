@@ -1,1 +1,1 @@
-export const DEFAULT_MONSTER_URL = new URL("/monster.glb", import.meta.url).toString();
+export const DEFAULT_MONSTER_URL = new URL("./assets/monster.glb", import.meta.url).toString();
