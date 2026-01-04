@@ -20,6 +20,8 @@ const idealLegLength = 3;
 const legLookHint = new Vector3(0, 0, -10);
 const legLookForward = new Vector3(0, -1, 0.8).normalize();
 
+const SIDES = ["L", "R"] as const;
+
 const leftArmConfig = {
   wristX: 4,
   wristYaw: -1,
@@ -75,9 +77,8 @@ export function useMonsterAnimation(
     applyEul(rootBone.rotation, rootRotation);
 
     const feetMan = feetManRef.current;
-    const sides = ["L", "R"] as const;
-    for (let i = 0; i < sides.length; i++) {
-      const side = sides[i];
+    for (let i = 0; i < SIDES.length; i++) {
+      const side = SIDES[i];
       const multX = i === 0 ? 1 : -1;
       const ankleBone = getBone(bonesRef.current, `Bone-ankle-${side}`)!;
       ankleBone.position.copy(rootBone.position);
