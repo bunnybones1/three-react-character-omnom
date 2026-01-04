@@ -18,6 +18,19 @@ export function applyVec3(target: Vector3, value: Vec3) {
     target.copy(value);
   }
 }
+
+export function vec3ToVector3(value: Vec3, target?: Vector3) {
+  if (!target && !isTriplet(value)) {
+    return value;
+  }
+  const out = target ?? new Vector3();
+  if (isTriplet(value)) {
+    out.set(value[0], value[1], value[2]);
+  } else {
+    out.copy(value);
+  }
+  return out;
+}
 export function applyEul(target: Euler, value: Eul) {
   if (isTriplet(value)) {
     target.set(value[0], value[1], value[2]);

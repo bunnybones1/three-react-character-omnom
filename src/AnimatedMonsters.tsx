@@ -13,6 +13,7 @@ export type MonsterState = {
   position: Vector3;
   rotation: Euler;
   phase: number;
+  lookTarget: Vector3;
 };
 
 const monsterCount = 7;
@@ -33,6 +34,7 @@ export function AnimatedMonsters() {
     () =>
       monsters.map(() => ({
         position: new Vector3(),
+        lookTarget: new Vector3(),
         rotation: new Euler(),
         phase: Math.random() * Math.PI * 2,
       })),
@@ -50,6 +52,12 @@ export function AnimatedMonsters() {
         Math.sin(tScaled * 0.4) * -2.5 + monster.origin.z,
       );
       monsterState.rotation.set(0, Math.sin(tScaled * 0.4) * -1.5, 0);
+      const tTargetScaled = t * monster.speed * 2.3;
+      monsterState.lookTarget.set(
+        Math.sin(tTargetScaled * 0.2) * 15 + monster.origin.x,
+        Math.sin(tTargetScaled * 0.3 + monsterState.phase) * 7.25 + 3.5 + monster.origin.y,
+        Math.sin(tTargetScaled * 0.4) * -2.5 + monster.origin.z + 8,
+      );
     });
   }, -1);
 
@@ -60,7 +68,9 @@ export function AnimatedMonsters() {
           key={index}
           color={monster.color}
           position={monsterStates[index].position}
+          lookTarget={monsterStates[index].lookTarget}
           rotation={monsterStates[index].rotation}
+          markersEnabled={false}
         />
       ))}
     </>

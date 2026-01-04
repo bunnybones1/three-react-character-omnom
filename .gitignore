@@ -133,3 +133,5 @@ dist
 .wrangler/
 
 dist-lib
+
+*.blend1

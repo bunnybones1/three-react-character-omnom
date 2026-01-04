@@ -1,14 +1,17 @@
 import { useFrame } from "@react-three/fiber";
 import { RefObject, useEffect, useRef } from "react";
-import { AxesHelper, Vector3 } from "three";
+import { AxesHelper, Euler, Quaternion, Vector3 } from "three";
+import type { Object3D } from "three";
 import { BoneState, setRot, getBone } from "./characterRigUtils/boneUtils";
 import { runArm } from "./characterRigUtils/ik/arm";
 import { setShouldersAndHip } from "./characterRigUtils/setShouldersAndHip";
 import { runLeg } from "./characterRigUtils/ik/leg";
 import { setMarker } from "./characterRigUtils/setMarker";
 import { FeetManager } from "./characterRigUtils/FeetManager";
+import { lookAtLocal } from "./characterRigUtils/lookAtLocal";
 import type { Eul, Vec3 } from "./types";
-import { applyVec3, applyEul } from "./mathUtils";
+import { applyVec3, applyEul, vec3ToVector3 } from "./mathUtils";
+import { translateAtEuler } from "./characterRigUtils/translateAtEuler";
 
 const lookAxisYPos = new Vector3(0, 1, 0);
 const lookAxisXPos = new Vector3(1, 0, 0);
@@ -21,6 +24,17 @@ const legLookHint = new Vector3(0, 0, -10);
 const legLookForward = new Vector3(0, -1, 0.8).normalize();
 
 const SIDES = ["L", "R"] as const;
+
+const __tempLookTarget = new Vector3();
+const __tempLookTargetLocal = new Vector3();
+const __tempLookTargetHeadLocal = new Vector3();
+const __tempHeadForward = new Vector3(0, 1, 0);
+const __tempHeadRight = new Vector3(1, 0, 0);
+const __tempEyeForward = new Vector3();
+const __tempEyeRight = new Vector3();
+const __defaultEuler = new Euler();
+
+const __tempQuat = new Quaternion();
 
 const leftArmConfig = {
   wristX: 4,
@@ -62,9 +76,11 @@ export function useMonsterAnimation(
   phaseRef: RefObject<number>,
   rootPosition: Vec3,
   rootRotation: Eul,
+  lookTarget: Vec3,
   markersEnabled = false,
 ) {
   const markersRef = useRef<Map<string, AxesHelper>>(new Map());
+  const eyesRef = useRef<{ left?: Object3D; right?: Object3D }>({});
 
   const feetManRef = useRef(new FeetManager());
   if (!(feetManRef.current instanceof FeetManager)) {
@@ -99,11 +115,23 @@ export function useMonsterAnimation(
     const t = state.clock.elapsedTime * 4;
     const root = getBone(bones, "Bone-root")!;
 
+    const markers = markersEnabled ? markersRef : undefined;
+
     applyVec3(root.position, rootPosition);
     applyEul(root.rotation, rootRotation);
-    setMarker(markersRef, root.parent, "position", root.position, root.rotation);
+    if (markers) {
+      setMarker(markers, root.parent, "position", root.position, root.rotation);
+    }
 
     const phase = phaseRef.current;
+
+    const lookTargetWorld = vec3ToVector3(lookTarget, __tempLookTarget);
+    const lookTargetLocal = root.parent
+      ? __tempLookTargetLocal.copy(lookTargetWorld)
+      : lookTargetWorld;
+    if (root.parent) {
+      root.parent.worldToLocal(lookTargetLocal);
+    }
 
     const wristRaiseL = Math.sin(t * 2 + phase) * 0.1;
     const wristFlexL = Math.sin(t * 2 + phase - 1) * 1.2;
@@ -115,16 +143,64 @@ export function useMonsterAnimation(
     const headYaw = Math.sin(t * 0.6 + phase) * 0.15;
     const headTilt = Math.sin(t * 1.1 + phase + 0.8) * 0.06;
 
-    const head = getBone(bones, "Bone-head")!;
+    const headEntry = bones.get("Bone-head");
+    if (!headEntry) {
+      return;
+    }
+    const { bone: head } = headEntry;
 
     head.position.copy(root.position);
     head.rotation.copy(root.rotation);
     head.translateY(2);
 
-    setRot(bones, "Bone-head", headNod, headYaw, headTilt);
-    setRot(bones, "Bone-jaw-lower", 0, 0, jawOpen * 2 + -0.5);
+    const t2 = root.position.clone();
+    translateAtEuler(t2, root.rotation, 0, -10, 0);
+    lookAtLocal(head, lookTargetLocal, __tempHeadForward, __tempHeadRight, t2);
+    __tempQuat.copy(head.quaternion);
+    head.rotation.copy(root.rotation);
+    head.rotateZ(Math.PI * -0.4);
+    head.rotateX(Math.PI * 0.5);
+    head.quaternion.slerp(__tempQuat, 0.8);
+    head.rotateX(headNod);
+    head.rotateY(headYaw);
+    head.rotateZ(headTilt);
 
-    const markers = markersEnabled ? markersRef : undefined;
+    head.updateWorldMatrix(true, false);
+    const lookTargetHeadLocal = __tempLookTargetHeadLocal.copy(lookTargetWorld);
+    head.worldToLocal(lookTargetHeadLocal);
+
+    const eyes = eyesRef.current;
+    if (!eyes.left) {
+      eyes.left = head.getObjectByName("eye-L") ?? undefined;
+      if (eyes.left && !eyes.left.userData.restRotation) {
+        eyes.left.userData.restRotation = eyes.left.rotation.clone();
+      }
+    }
+    if (!eyes.right) {
+      eyes.right = head.getObjectByName("eye-R") ?? undefined;
+      if (eyes.right && !eyes.right.userData.restRotation) {
+        eyes.right.userData.restRotation = eyes.right.rotation.clone();
+      }
+    }
+
+    if (eyes.left) {
+      const restRotation = eyes.left.userData.restRotation as Euler | undefined;
+      if (restRotation) {
+        __tempEyeForward.copy(lookAxisYPos).applyEuler(restRotation);
+        __tempEyeRight.copy(lookAxisXPos).applyEuler(restRotation);
+        lookAtLocal(eyes.left, lookTargetHeadLocal, __tempEyeForward, __tempEyeRight);
+      }
+    }
+    if (eyes.right) {
+      const restRotation = eyes.right.userData.restRotation as Euler | undefined;
+      if (restRotation) {
+        __tempEyeForward.copy(lookAxisYPos).applyEuler(restRotation);
+        __tempEyeRight.copy(lookAxisXPos).applyEuler(restRotation);
+        lookAtLocal(eyes.right, lookTargetHeadLocal, __tempEyeForward, __tempEyeRight);
+      }
+    }
+
+    setRot(bones, "Bone-jaw-lower", 0, 0, jawOpen * 2 + -0.5);
 
     setShouldersAndHip(bones, root, "L", 1, markers);
     setShouldersAndHip(bones, root, "R", -1, markers);
@@ -133,9 +209,10 @@ export function useMonsterAnimation(
 
     feetMan.update(getBone(bones, "Bone-hip-L")!, getBone(bones, "Bone-hip-R")!, delta);
     if (markersEnabled) {
+      setMarker(markersRef, root.parent, "lookTarget", lookTargetLocal, __defaultEuler);
       setMarker(
         markersRef,
-        root.parent,
+        root.parent!.parent,
         "desired-footL",
         feetMan.L.desired.position,
         feetMan.L.desired.rotation,

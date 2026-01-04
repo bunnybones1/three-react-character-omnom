@@ -43,19 +43,24 @@ function makeColor(color?: number) {
 export type MonsterProps = {
   color?: number;
   position?: Vec3;
+  lookTarget?: Vec3;
   rotation?: Eul;
   modelUrl?: string;
+  markersEnabled?: boolean;
 };
 
 const DEFAULT_POSITION: Vec3 = [0, 0, 0];
+const DEFAULT_LOOK_TARGET: Vec3 = [0, 2, -10];
 const DEFAULT_ROTATION: Eul = [0, 0, 0];
 
 export function Monster(props: MonsterProps) {
   const {
     color,
     position = DEFAULT_POSITION,
+    lookTarget = DEFAULT_LOOK_TARGET,
     rotation = DEFAULT_ROTATION,
     modelUrl = DEFAULT_MONSTER_URL,
+    markersEnabled = false,
   } = props;
   const gltf = useGLTF(modelUrl);
   const colorRef = useRef<Color>(makeColor(color));
@@ -91,7 +96,7 @@ export function Monster(props: MonsterProps) {
     bonesRef.current = bones;
   }, [scene, color]);
 
-  useMonsterAnimation(bonesRef, phaseRef, position, rotation);
+  useMonsterAnimation(bonesRef, phaseRef, position, rotation, lookTarget, markersEnabled);
 
   return <primitive object={scene} />;
 }
