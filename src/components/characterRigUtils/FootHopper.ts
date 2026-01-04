@@ -151,6 +151,9 @@ export class FootHopper {
     hipToFootPlanar.y = 0;
     const hipToFootPlanarSq = hipToFootPlanar.lengthSq();
     const outOfRange = hipToFootPlanarSq > this.maxLegDistanceSq;
+    if (hipToFootPlanarSq > 4) {
+      hipToFootPlanar.multiplyScalar(2 / Math.sqrt(hipToFootPlanarSq));
+    }
     if (this.state === "planted") {
       this.idleTime += Math.max(0, delta);
     } else {
