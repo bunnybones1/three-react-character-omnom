@@ -1,6 +1,6 @@
 {
   "name": "three-react-character-omnom",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A 3D rigged character component with a simplified control interface and procedural animations.",
   "main": "dist-lib/index.cjs",
   "module": "dist-lib/index.mjs",
