@@ -10,7 +10,7 @@ import { setMarker } from "./characterRigUtils/setMarker";
 import { FeetManager } from "./characterRigUtils/FeetManager";
 import { lookAtLocal } from "./characterRigUtils/lookAtLocal";
 import type { Eul, Vec3 } from "./types";
-import { applyVec3, applyEul, vec3ToVector3 } from "./mathUtils";
+import { applyEul, vec3ToVector3 } from "./mathUtils";
 import { translateAtEuler } from "./characterRigUtils/translateAtEuler";
 
 const lookAxisYPos = new Vector3(0, 1, 0);
@@ -35,6 +35,18 @@ const __tempEyeRight = new Vector3();
 const __defaultEuler = new Euler();
 
 const __tempQuat = new Quaternion();
+const __tempRootPositionWorld = new Vector3();
+const __tempRootPositionLocal = new Vector3();
+
+function applyRootTransform(root: Object3D, rootPosition: Vec3, rootRotation: Eul) {
+  const rootWorld = vec3ToVector3(rootPosition, __tempRootPositionWorld);
+  const rootLocal = root.parent ? __tempRootPositionLocal.copy(rootWorld) : rootWorld;
+  if (root.parent) {
+    root.parent.worldToLocal(rootLocal);
+  }
+  root.position.copy(rootLocal);
+  applyEul(root.rotation, rootRotation);
+}
 
 const leftArmConfig = {
   wristX: 4,
@@ -75,6 +87,8 @@ export function useMonsterAnimation(
   bonesRef: RefObject<Map<string, BoneState>>,
   phaseRef: RefObject<number>,
   rootPosition: Vec3,
+  scale: number,
+  floorHeight: number,
   rootRotation: Eul,
   lookTarget: Vec3,
   markersEnabled = false,
@@ -82,15 +96,17 @@ export function useMonsterAnimation(
   const markersRef = useRef<Map<string, AxesHelper>>(new Map());
   const eyesRef = useRef<{ left?: Object3D; right?: Object3D }>({});
 
-  const feetManRef = useRef(new FeetManager());
+  const feetManRef = useRef(new FeetManager({ scale, floorHeight }));
   if (!(feetManRef.current instanceof FeetManager)) {
-    feetManRef.current = new FeetManager();
+    feetManRef.current = new FeetManager({ scale, floorHeight });
   }
+  useEffect(() => {
+    feetManRef.current = new FeetManager({ scale, floorHeight });
+  }, [scale, floorHeight]);
 
   useEffect(() => {
     const rootBone = getBone(bonesRef.current, "Bone-root")!;
-    applyVec3(rootBone.position, rootPosition);
-    applyEul(rootBone.rotation, rootRotation);
+    applyRootTransform(rootBone, rootPosition, rootRotation);
 
     const feetMan = feetManRef.current;
     for (let i = 0; i < SIDES.length; i++) {
@@ -117,8 +133,7 @@ export function useMonsterAnimation(
 
     const markers = markersEnabled ? markersRef : undefined;
 
-    applyVec3(root.position, rootPosition);
-    applyEul(root.rotation, rootRotation);
+    applyRootTransform(root, rootPosition, rootRotation);
     if (markers) {
       setMarker(markers, root.parent, "position", root.position, root.rotation);
     }

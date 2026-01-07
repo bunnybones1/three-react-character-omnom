@@ -11,6 +11,8 @@ export type FootHopperConfig = {
   hopDuration?: number;
   hopHeight?: number;
   velocitySmoothing?: number;
+  scale?: number;
+  floorHeight?: number;
 };
 
 const DEFAULT_FOOT_OFFSET = new Vector3(0, -2, 0);
@@ -22,8 +24,9 @@ const DEFAULT_CONFIG = {
   hopDuration: 0.26,
   hopHeight: 1.25,
   velocitySmoothing: 0.2,
+  scale: 1,
+  floorHeight: 0.5,
 };
-const GROUND_PLANE = new Plane(new Vector3(0, 1, 0), -0.5);
 
 export class FootHopper {
   desired = new SpatialData();
@@ -32,6 +35,9 @@ export class FootHopper {
 
   private config: Required<FootHopperConfig>;
   private maxLegDistanceSq: number;
+  private maxPlanarDistance: number;
+  private maxPlanarDistanceSq: number;
+  private groundPlane: Plane;
   private lastHipPosition = new Vector3();
   private hipVelocity = new Vector3();
   private hasVelocity = false;
@@ -61,11 +67,16 @@ export class FootHopper {
       hopDuration,
       hopHeight,
       velocitySmoothing,
+      floorHeight,
     } = { ...defaultConfig, ...config };
-    const resolvedFootOffset = (footOffset ?? defaultConfig.footOffset).clone();
-    const resolvedMaxLegDistance = maxLegDistance ?? defaultConfig.maxLegDistance;
+    const safeScale = Math.max(0, Math.abs(config.scale ?? defaultConfig.scale));
+    const resolvedFootOffset = (footOffset ?? defaultConfig.footOffset)
+      .clone()
+      .multiplyScalar(safeScale);
+    const resolvedMaxLegDistance = (maxLegDistance ?? defaultConfig.maxLegDistance) * safeScale;
     const resolvedPredictionTime = predictionTime ?? defaultConfig.predictionTime;
     const resolvedHopHeight = hopHeight ?? defaultConfig.hopHeight;
+    const resolvedFloorHeight = floorHeight ?? defaultConfig.floorHeight;
     const safeHopDuration = Math.max(0.001, hopDuration ?? defaultConfig.hopDuration);
     const safeMaxLegIdle = Math.max(0, maxLegIdle ?? defaultConfig.maxLegIdle);
     const safeVelocitySmoothing = Math.min(
@@ -80,8 +91,13 @@ export class FootHopper {
       hopDuration: safeHopDuration,
       hopHeight: resolvedHopHeight,
       velocitySmoothing: safeVelocitySmoothing,
+      scale: safeScale,
+      floorHeight: resolvedFloorHeight,
     };
     this.maxLegDistanceSq = resolvedMaxLegDistance * resolvedMaxLegDistance;
+    this.maxPlanarDistance = 2 * safeScale;
+    this.maxPlanarDistanceSq = this.maxPlanarDistance * this.maxPlanarDistance;
+    this.groundPlane = new Plane(new Vector3(0, 1, 0), -resolvedFloorHeight);
   }
 
   plant(position: Vector3, rotation?: Euler) {
@@ -115,7 +131,7 @@ export class FootHopper {
       ) {
         this.tempOffset.copy(this.config.footOffset).applyQuaternion(this.tempQuat);
         this.desiredWorld.copy(this.hipWorld).add(this.tempOffset);
-        GROUND_PLANE.projectPoint(this.desiredWorld, this.desiredWorld);
+        this.groundPlane.projectPoint(this.desiredWorld, this.desiredWorld);
         this.actual.position.copy(this.desiredWorld);
         rigRoot.worldToLocal(this.actual.position);
         this.actual.rotation.copy(hip.rotation);
@@ -151,8 +167,8 @@ export class FootHopper {
     hipToFootPlanar.y = 0;
     const hipToFootPlanarSq = hipToFootPlanar.lengthSq();
     const outOfRange = hipToFootPlanarSq > this.maxLegDistanceSq;
-    if (hipToFootPlanarSq > 4) {
-      hipToFootPlanar.multiplyScalar(2 / Math.sqrt(hipToFootPlanarSq));
+    if (hipToFootPlanarSq > this.maxPlanarDistanceSq) {
+      hipToFootPlanar.multiplyScalar(this.maxPlanarDistance / Math.sqrt(hipToFootPlanarSq));
     }
     if (this.state === "planted") {
       this.idleTime += Math.max(0, delta);
@@ -167,7 +183,7 @@ export class FootHopper {
     } else {
       this.desiredWorld.copy(this.predictedHipWorld).add(this.tempOffset);
     }
-    GROUND_PLANE.projectPoint(this.desiredWorld, this.desiredWorld);
+    this.groundPlane.projectPoint(this.desiredWorld, this.desiredWorld);
     this.desired.position.copy(this.desiredWorld);
     rigRoot.worldToLocal(this.desired.position);
 

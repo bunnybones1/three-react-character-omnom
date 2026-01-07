@@ -43,6 +43,8 @@ function makeColor(color?: number) {
 export type MonsterProps = {
   color?: number;
   position?: Vec3;
+  scale?: number;
+  floorHeight?: number;
   lookTarget?: Vec3;
   rotation?: Eul;
   modelUrl?: string;
@@ -52,11 +54,14 @@ export type MonsterProps = {
 const DEFAULT_POSITION: Vec3 = [0, 0, 0];
 const DEFAULT_LOOK_TARGET: Vec3 = [0, 2, -10];
 const DEFAULT_ROTATION: Eul = [0, 0, 0];
+const DEFAULT_FLOOR_HEIGHT = 0.5;
 
 export function Monster(props: MonsterProps) {
   const {
     color,
     position = DEFAULT_POSITION,
+    scale = 1,
+    floorHeight = DEFAULT_FLOOR_HEIGHT,
     lookTarget = DEFAULT_LOOK_TARGET,
     rotation = DEFAULT_ROTATION,
     modelUrl = DEFAULT_MONSTER_URL,
@@ -71,6 +76,7 @@ export function Monster(props: MonsterProps) {
   useLayoutEffect(() => {
     colorRef.current = makeColor(color);
     const bones = new Map<string, BoneState>();
+    scene.scale.setScalar(scale);
     scene.traverse((child) => {
       if (child instanceof Mesh || child instanceof SkinnedMesh) {
         child.castShadow = true;
@@ -94,9 +100,18 @@ export function Monster(props: MonsterProps) {
       }
     });
     bonesRef.current = bones;
-  }, [scene, color]);
+  }, [scene, color, scale]);
 
-  useMonsterAnimation(bonesRef, phaseRef, position, rotation, lookTarget, markersEnabled);
+  useMonsterAnimation(
+    bonesRef,
+    phaseRef,
+    position,
+    scale,
+    floorHeight,
+    rotation,
+    lookTarget,
+    markersEnabled,
+  );
 
   return <primitive object={scene} />;
 }

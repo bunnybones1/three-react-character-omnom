@@ -2,6 +2,8 @@ import { Object3D } from "three";
 import { FootHopper, FootHopperConfig } from "./FootHopper";
 
 export type FeetManagerConfig = {
+  scale?: number;
+  floorHeight?: number;
   left?: FootHopperConfig;
   right?: FootHopperConfig;
 };
@@ -13,8 +15,20 @@ export class FeetManager {
   R: FootHopper;
 
   constructor(config: FeetManagerConfig = {}) {
-    this.left = new FootHopper(config.left);
-    this.right = new FootHopper(config.right);
+    const leftConfig = config.left ?? {};
+    const rightConfig = config.right ?? {};
+    const scale = config.scale;
+    const floorHeight = config.floorHeight;
+    this.left = new FootHopper({
+      ...leftConfig,
+      scale: leftConfig.scale ?? scale,
+      floorHeight: leftConfig.floorHeight ?? floorHeight,
+    });
+    this.right = new FootHopper({
+      ...rightConfig,
+      scale: rightConfig.scale ?? scale,
+      floorHeight: rightConfig.floorHeight ?? floorHeight,
+    });
     this.L = this.left;
     this.R = this.right;
   }

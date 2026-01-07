@@ -19,7 +19,7 @@ export default function App() {
 
   return (
     <>
-      <MyCanvas quality={"default"}>
+      <MyCanvas>
         <color attach="background" args={["#557799"]} />
 
         <Environment />
